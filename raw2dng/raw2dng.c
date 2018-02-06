@@ -73,10 +73,13 @@ int checkAndCreateDir(const char * dir)
 int writeTiff(FILE * fp, struct tm tm, const char * origFilename, const char * fileName, uint32_t xRes, uint32_t yRes, uint32_t frame, int packType)
 {
 	static const short CFARepeatPatternDim[] = { 2,2 };
+	//This is the matrix that converts XYZ to the camera color space, not the other way around as the name implies. Compute the inverse of the cam to XYZ matrix and put it here.
 	static const float cam_xyz[] =
-	{ 0.5950, 0.2446, 0.1244, 0.1193, 0.8901, -0.0094, 0.0595, -0.7254, 1.4911 }; //D50 CIECAM02 for LUX1310 (THIS IS VERY WRONG)
-	//{ 2.005,-0.771,-0.269, -0.752,1.688,0.064, -0.149,0.283,0.745 };
-	static const float neutral[] = {1.0, 1.0, 1.0}; //{ 0.807133, 1.0, 0.913289 };
+	{1.7716, -0.5404, -0.1674, -0.2845, 1.2494, 0.0247, -0.2300, 0.6236, 0.6471};
+	//{ 1.7324, -0.5415, -0.1561, -0.2725, 1.2467, 0.0194, -0.2057, 0.6289, 0.6900 }; //D50 CIECAM02 for LUX1310
+	//{ 2.005,-0.771,-0.269, -0.752,1.688,0.064, -0.149,0.283,0.745 }; //Old matrix that came with elphel_dng
+	//This is the white balance matrix, this seems to need to be 1 over the white balance values
+	static const float neutral[] = {1.0/1.1921, 1.0/1.0, 1.0/1.0935}; //{ 0.807133, 1.0, 0.913289 };
 	long sub_offset=0, white;
 	uint16_t buf[2048];
 	float gam;
@@ -130,7 +133,7 @@ int writeTiff(FILE * fp, struct tm tm, const char * origFilename, const char * f
 	TIFFSetField (tif, TIFFTAG_UNIQUECAMERAMODEL, "Krontech Chronos 1.4");
 	TIFFSetField (tif, TIFFTAG_COLORMATRIX1, 9, cam_xyz);
 	TIFFSetField (tif, TIFFTAG_ASSHOTNEUTRAL, 3, neutral);
-	TIFFSetField (tif, TIFFTAG_CALIBRATIONILLUMINANT1, 21);
+	TIFFSetField (tif, TIFFTAG_CALIBRATIONILLUMINANT1, 20);
 	TIFFSetField (tif, TIFFTAG_ORIGINALRAWFILENAME, origFilename);
 
 	memset (buf, 0, xRes);	// all-black thumbnail
