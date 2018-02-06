@@ -1,0 +1,35 @@
+#########################################
+#                                       #
+# Chronos 1.4 Raw Image format          #
+# to Adobe DNG converter application    #
+#                                       #
+# Installation Instructions             #
+#                                       #
+#########################################
+
+
+First, clone libtiff 3.8.2 and apply the patch: in terminal (first cd to path of libtiff.patch):
+
+  patch -p0 < libtiff.patch
+
+then build the patched LibTIFF:
+
+  cd tiff-3.8.2
+  ./configure
+  make
+  sudo make install
+
+Then compile the C program raw2dng.c with:
+
+  gcc -o raw2dng raw2dng.c -Wall -lm -ltiff -ljpeg
+
+With Ubuntu 9.04 (and later) its possible that the wrong libtiff is selected automatically which results in a error like this:
+
+TIFFSetField: test.dng: Unknown tag 33421.
+TIFFSetField: test.dng: Unknown tag 33422.
+Segmentation faul
+
+To solve that problem compile with this command forcing a specific libtiff version:
+
+  gcc -o raw2dng raw2dng.c -Wall -lm -ljpeg /usr/local/lib/libtiff.so.3.8.2 
+
