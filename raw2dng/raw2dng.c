@@ -44,8 +44,8 @@ enum
 	
 enum
 {
-	PACK_TYPE_16B_RJ = 0,
-	PACK_TYPE_16B_LJ,
+	PACK_TYPE_16B_LJ = 0, 
+	PACK_TYPE_16B_RJ,
 	PACK_TYPE_12B
 };
 
@@ -191,7 +191,7 @@ int writeTiff(FILE * fp, struct tm tm, const char * origFilename, const char * f
 int main (int argc, char **argv)
 {
 	int status=1, i;
-	uint32_t xRes, yRes;
+	uint32_t xRes, yRes, packType = PACK_TYPE_16B_LJ;
 	int maxFrames = 0x7FFFFFFF;
 	struct stat st;
 	struct tm tm;
@@ -204,9 +204,14 @@ int main (int argc, char **argv)
 	if (argc < 5)
 	{
 		printf("Usage: %s xRes yRes infile outfile [options]\n"
-		"Example: %s 1280 720 inFile.raw outputFile\n"
+		"Example: %s 1280 720 inFile.raw outputFile -n 5 -f 16rj\n"
 		"Options:\n"
-		"  -n <number> - process only <number> frames\n", argv[0],argv[0]);
+		"  -n <number> - process only <number> frames (default: process all frames)\n"
+		"  -f <format> - data packing type:\n"
+		"    ""16""   - 16-bit left justified ('Raw 16bit' setting on camera) (default)\n"
+		"    ""16rj"" - 16-bit right justified ('Raw 16RJ' setting on camera)\n"
+		"    ""12""   - 12-bit packed ('Raw 12bit packed' setting on camera)\n",
+		argv[0],argv[0]);
 		return 1;
 	}
 	
@@ -226,9 +231,42 @@ int main (int argc, char **argv)
 				maxFrames = atoi(argv[i]);
 				printf("Frame count limit set to %d\n", maxFrames);
 			}	
+			
+			if(0 == strcmp(argv[i], "-f"))	//-f format
+			{
+				i++;
+				
+				if(i >= argc)
+				{
+					printf("Error: Incomplete arguments - format specifier did not follow -f switch\n");
+					return 1;
+				}
+				
+				if(0 == strcmp(argv[i], "16"))
+				{
+					packType = PACK_TYPE_16B_LJ;
+					printf("Format: 16-bit left justified\n");
+				}
+				else if(0 == strcmp(argv[i], "16rj"))
+				{
+					packType = PACK_TYPE_16B_RJ;
+					printf("Format: 16-bit right justified\n");	
+				}
+				else if(0 == strcmp(argv[i], "12"))
+				{
+					packType = PACK_TYPE_12B;
+					printf("12-bit packed data format isn't yet supported\n");
+					return 1;
+				}
+				else
+				{
+					printf("Format specifier ""%s"" is invalid, must be ""16"", ""16rj"", or ""12""\n", argv[i]);
+					return 1;
+				}
+			}
 		}
 	}
-
+	
 	if (!(ifp = fopen (argv[3], "rb"))) {
 		perror (argv[3]);
 		return 1;
@@ -272,7 +310,7 @@ int main (int argc, char **argv)
 		//Get destination filename and append number
 		sprintf(filename, "%s/%s_%06d.dng", outputPath, argv[4], i+1);	
 
-	  	ret_in = writeTiff(ifp, tm, argv[3], filename, xRes, yRes, i, PACK_TYPE_16B_RJ);
+	  	ret_in = writeTiff(ifp, tm, argv[3], filename, xRes, yRes, i, packType);
 	  	if(SUCCESS != ret_in)
 	  	{
 	  		printf("writeTiff returned error %d", ret_in);
