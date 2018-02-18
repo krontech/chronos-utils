@@ -20,7 +20,7 @@ This might work in Python 3 as well but it has not been tested.
 Help (via --help)
 -----------------
 
-`
+```
 pyraw2dng.py - Command line converter from Chronos1.4 raw format to DNG image sequence
 Copywrite KronTech 2018.
 
@@ -38,4 +38,4 @@ Output filename format must include '%06d' which will be replaced by the image s
 Examples:
   pyraw2dng.py -M -w 1280 -l 1024 test.raw
   pyraw2dng.py -w 336 -l 96 test.raw test_output/test_%06d.DNG
-`
+```
