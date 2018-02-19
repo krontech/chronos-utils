@@ -8,6 +8,7 @@ import time
 import array
 import getopt
 import platform
+import errno
 
 class Type:
     # TIFF Type Format = (Tag TYPE value, Size in bytes of one instance)
@@ -471,8 +472,10 @@ def main():
 
     elif len(args) == 1:
         inputFilename = args[0]
-        basename = os.path.splitext(inputFilename)[0]
-        outputFilenameFormat = basename + '/' + basename + '_%06d.DNG'
+        dirname = os.path.splitext(inputFilename)[0]
+        basename = os.path.basename(inputFilename)
+        print basename
+        outputFilenameFormat = dirname + '/' + basename + '_%06d.DNG'
     else:
         inputFilename = args[0]
         outputFilenameForamt = args[1]
