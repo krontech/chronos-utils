@@ -349,12 +349,12 @@ def convertVideo(inputFilename, outputFilenameFormat, width, length, colour):
     mainIFD = dngIFD()
     mainTagStripOffset = dngTag(Tag.StripOffsets, [0])
     mainIFD.tags.append(dngTag(Tag.NewSubfileType           , [0]))
-    mainIFD.tags.append(dngTag(Tag.StripByteCounts          , [1280*1024*2]))
-    mainIFD.tags.append(dngTag(Tag.ImageWidth               , [1280]))
-    mainIFD.tags.append(dngTag(Tag.ImageLength              , [1024]))
+    mainIFD.tags.append(dngTag(Tag.StripByteCounts          , [width*length*2]))
+    mainIFD.tags.append(dngTag(Tag.ImageWidth               , [width]))
+    mainIFD.tags.append(dngTag(Tag.ImageLength              , [length]))
     mainIFD.tags.append(dngTag(Tag.SamplesPerPixel          , [1]))
     mainIFD.tags.append(dngTag(Tag.BitsPerSample            , [16]))
-    mainIFD.tags.append(dngTag(Tag.RowsPerStrip             , [1024]))
+    mainIFD.tags.append(dngTag(Tag.RowsPerStrip             , [length]))
     mainIFD.tags.append(dngTag(Tag.Compression              , [1])) # uncompressed
     
     if (colour):
