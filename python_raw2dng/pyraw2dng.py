@@ -414,11 +414,12 @@ Copywrite KronTech 2018.
 pyraw2dng.py <options> <inputFilename> [<OutputFilenameFormat>]
 
 Options:
- -h/--help   Display this help message
+ --help      Display this help message
  -M/--mono   Raw data is mono
  -C/--color  Raw data is colour
  -w/--width  Frame width
  -l/--length Frame length
+ -h/--height Frame length (please use only one)
    
 Output filename format must include '%06d' which will be replaced by the image sequence number.
 
@@ -437,7 +438,7 @@ def main():
     
     
     try:
-        options, args = getopt.getopt(sys.argv[1:], 'hCMw:l:', ['help', 'color', 'mono', 'width', 'length', 'height'])
+        options, args = getopt.getopt(sys.argv[1:], 'CMw:l:h:', ['help', 'color', 'mono', 'width', 'length', 'height'])
     except getopt.error:
         print 'Error: You tried to use an unknown option.\n\n'
         print helptext
@@ -448,7 +449,7 @@ def main():
         sys.exit(0)
     
     for o, a in options:
-        if o in ('-h', '--help'):
+        if o in ('--help'):
             print helptext
             sys.exit(0)
 
@@ -458,7 +459,7 @@ def main():
         elif o in ('-M', '--mono'):
             colour = False
 
-        elif o in ('-l', '--length', '--height'):
+        elif o in ('-l', '-h', '--length', '--height'):
             length = int(a)
 
         elif o in ('-w', '--width'):

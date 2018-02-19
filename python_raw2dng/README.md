@@ -27,11 +27,12 @@ Copywrite KronTech 2018.
 pyraw2dng.py <options> <inputFilename> [<OutputFilenameFormat>]
 
 Options:
- -h/--help   Display this help message
+ --help      Display this help message
  -M/--mono   Raw data is mono
  -C/--color  Raw data is colour
  -w/--width  Frame width
  -l/--length Frame length
+ -h/--height Also frame length
    
 Output filename format must include '%06d' which will be replaced by the image sequence number.
 
