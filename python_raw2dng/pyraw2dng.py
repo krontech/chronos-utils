@@ -379,9 +379,10 @@ def convertVideo(inputFilename, outputFilenameFormat, width, length, colour):
     mainIFD.tags.append(dngTag(Tag.DNGVersion               , [1, 1, 0, 0]))
     mainIFD.tags.append(dngTag(Tag.DNGBackwardVersion       , [1, 0, 0, 0]))
     mainIFD.tags.append(dngTag(Tag.UniqueCameraModel        , "Krontech Chronos 1.4"))
-    mainIFD.tags.append(dngTag(Tag.ColorMatrix1             , [[17716, 10000], [-5404, 10000], [-1674, 10000],
-                                                               [-2845, 10000], [12494, 10000], [-2057, 10000],
-                                                               [-2300, 10000], [ 6236, 10000], [ 6471, 10000]]))
+    mainIFD.tags.append(dngTag(Tag.ColorMatrix1             , [[15407, 10000], [-3218, 10000], [-1652, 10000],	#CIECAM16 color matrix for LUX1310, D55 illuminant
+                                                               [-3799, 10000], [13260, 10000], [-408, 10000],
+                                                               [-3047, 10000], [ 6673, 10000], [ 6774, 10000]]))
+    mainIFD.tags.append(dngTag(Tag.AsShotNeutral            , [[10000, 15150], [10000, 10000], [10000, 11048]]))
     mainIFD.tags.append(dngTag(Tag.CalibrationIlluminant1   , [20]))
 
     dngTemplate.IFDs.append(mainIFD)
@@ -410,7 +411,8 @@ def convertVideo(inputFilename, outputFilenameFormat, width, length, colour):
 
 #===============================================================================================================
 helptext = '''pyraw2dng.py - Command line converter from Chronos1.4 raw format to DNG image sequence
-Copywrite KronTech 2018.
+Version 0.1
+Copyright 2018 Kron Technologies Inc.
 
 pyraw2dng.py <options> <inputFilename> [<OutputFilenameFormat>]
 
