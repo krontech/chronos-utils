@@ -478,7 +478,7 @@ def main():
         outputFilenameFormat = dirname + '/' + basename + '_%06d.DNG'
     else:
         inputFilename = args[0]
-        outputFilenameForamt = args[1]
+        outputFilenameFormat = args[1]
 
 
     convertVideo(inputFilename, outputFilenameFormat, width, length, colour)
