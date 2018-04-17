@@ -33,6 +33,31 @@ dbg = pdb.set_trace
 bytes_per_channel = 2
 channels_per_pixel = 4
 
+# camSPECS CCM calculation: CIECAM02 RGB to sRGB & white balance
+# (from camApp's camera.h defaultColorCalMatrix)
+color_cal_matrix = [
+	[+1.2330, +0.6468, -0.7764],
+	[-0.3219, +1.6901, -0.3811],
+	[-0.0614, -0.6409, +1.5258],
+]
+white_bal_matrix = [1.5150, 1, 1.1048]
+gain = 1
+
+final_color_correction_matrix = [
+	#DDR 2018-04-16: We may need to apply the white bal matrix 012,012,012 instead of 000,111,222. However, this is how the camera does it at the moment.
+	[color_cal_matrix[0][0] * white_bal_matrix[0] * gain,
+	 color_cal_matrix[0][1] * white_bal_matrix[0] * gain,
+	 color_cal_matrix[0][2] * white_bal_matrix[0] * gain],
+
+	[color_cal_matrix[1][0] * white_bal_matrix[1] * gain,
+	 color_cal_matrix[1][1] * white_bal_matrix[1] * gain,
+	 color_cal_matrix[1][2] * white_bal_matrix[1] * gain],
+
+	[color_cal_matrix[2][0] * white_bal_matrix[2] * gain,
+	 color_cal_matrix[2][1] * white_bal_matrix[2] * gain,
+	 color_cal_matrix[2][2] * white_bal_matrix[2] * gain],
+]
+
 def print_help():
 	print("\nUsage: raw2steps input_video.raw width height [denoise] [for-all-frames] [as-video]")
 	print("\nExample: python3 raw2steps.py vid_2015-02-14_09-21-10.raw 800 600 denoise\n")
@@ -105,17 +130,21 @@ if os.path.exists(output_folder):
 os.mkdir(output_folder)
 os.chdir(output_folder)
 
-raw_data= open(    "step-00.input-frame.raw", "wb")
-raw_r   = open(    "step-01.red.linear-color-space.single-channel.raw", "wb")
-dat_r   = open(    "step-01.red.linear-color-space.data", "wb")
-raw_g1  = open("step-02.green.1.linear-color-space.single-channel.raw", "wb") # g1 and g2 are the two green channels from the camera sensor - our sensor pattern is clusters of [[g,r],[b,g]].
-dat_g1  = open("step-02.green.1.linear-color-space.data", "wb")
-raw_g2  = open("step-03-green.2.linear-color-space.single-channel.raw", "wb")
-dat_g2  = open("step-03-green.2.linear-color-space.data", "wb")
-raw_b   = open(   "step-04.blue.linear-color-space.single-channel.raw", "wb")
-dat_b   = open(   "step-04.blue.linear-color-space.single-channel.data", "wb")
-raw_rgb = open("step-05.rgb.debayered.linear-color-space.raw", "wb")
-dat_rgb = open("step-05.rgb.debayered.linear-color-space.data", "wb")
+raw_data= open(    "step-00.input-dat.linear.non-debayered.raw", "wb")
+raw_r   = open(    "step-01.red.linear.single-channel.raw", "wb")
+dat_r   = open(    "step-01.red.linear.rgb.data", "wb")
+raw_g1  = open("step-02.green.1.linear.single-channel.raw", "wb") # g1 and g2 are the two green channels from the camera sensor - our sensor pattern is clusters of [[g,r],[b,g]].
+dat_g1  = open("step-02.green.1.linear.rgb.data", "wb")
+raw_g2  = open("step-03-green.2.linear.single-channel.raw", "wb")
+dat_g2  = open("step-03-green.2.linear.rgb.data", "wb")
+raw_b   = open(   "step-04.blue.linear.single-channel.raw", "wb")
+dat_b   = open(   "step-04.blue.linear.single-channel.data", "wb")
+raw_rgb = open( "step-05.rgb.debayered.linear.raw", "wb")
+dat_rgb = open( "step-05.rgb.debayered.linear.data", "wb")
+raw_srgb = open("step-06.sRGB.raw", "wb")
+dat_srgb = open("step-06.sRGB.data", "wb")
+raw_ciecam = open("step-07.sRGB.ciecam-color-corrected.raw", "wb")
+dat_ciecam = open("step-07.sRGB.ciecam-color-corrected.data", "wb")
 
 class RawFrameChannels():
 	# Return a channel from a frame of video.
@@ -148,7 +177,7 @@ class RawFrameChannels():
 		
 		return int.from_bytes(self.frame_data[index:index+bytes_per_channel], byteorder='little')
 
-c2b = lambda f: bytes([min(255, f//10)]) #channel to byte - shitty, shitty post-processing
+c2b = lambda f: bytes([min(255, f//256)]) #channel to byte - discard some information to get 8 bit color from 16.
 
 def frame_pixels():
 	def corners(x,y):
@@ -209,15 +238,30 @@ def frame_pixels():
 video.seek(current_frame * bytes_per_frame)
 for frames in range(start_frame, end_frame): #TODO: Make new folders for each frame, if more than one?
 	for pixel in frame_pixels():
-		# Debayered individual channels, one fully-coloured pixel per sensor channel.
-		for channel in pixel:
-			raw_rgb.write(channel.to_bytes(2, byteorder='little'))
-			dat_rgb.write(c2b(channel)) #discard lower byte
-	
-		# Linear RGB to sRGB
-
-		# Gamma Correction
-
-		# Colour temperature and white balance. These are calculated as one step because the camApp multiplies their matrices together, and then the FPGA uses that matrix to perform the steps at the same time.
-
+		for i in [0,1,2]: # r,g,b channels
+			
+			# Debayered individual channels, one fully-coloured pixel per sensor channel.
+			raw_rgb.write(pixel[i].to_bytes(2, byteorder='little'))
+			dat_rgb.write(c2b(pixel[i])) #discard lower byte and write
+			
+			
+			# Linear RGB to sRGB (includes gamma correction)
+			if pixel[i]/65535 <= 0.0031308: #65535 is max possible channel value
+				pixel[i] = int(12.92 * pixel[i])
+			else:
+				pixel[i] = int((1.055 * pow(pixel[i]/65535, 1/2.4) - 0.055) * 65535)
+			
+			raw_srgb.write(pixel[i].to_bytes(2, byteorder='little'))
+			dat_srgb.write(c2b(pixel[i]))
+			
+			
+			# Colour temperature and white balance. (Colour profile) These are calculated as one step because the camApp multiplies their matrices together, and then the FPGA uses that matrix to perform the steps at the same time.
+			fccm = final_color_correction_matrix
+			pixel[i] = int(max(0, min(65535, pixel[0]*fccm[i][0] + pixel[1]*fccm[i][1] + pixel[2]*fccm[i][2])))
+			
+			raw_ciecam.write(pixel[i].to_bytes(2, byteorder='little'))
+			dat_ciecam.write(c2b(pixel[i]))
+		
+		
+		
 		# Run raw2dng.py over the output. (But fix the embedded matrices first…)
