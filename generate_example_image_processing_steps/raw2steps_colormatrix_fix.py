@@ -1,4 +1,5 @@
 #!/usr/bin/python3 
+
 """
 This script breaks a raw 16-bit video from a Chronos into discreet steps, so
 that the video processing pipeline can be verified. Each step is output as an
@@ -28,7 +29,8 @@ import os
 import pdb
 dbg = pdb.set_trace
 
-# import the gamma table that was generated from the FPGA resources
+import array
+
 from gamma_lookup import gamma_lookup_table
 
 bytes_per_channel = 2
@@ -44,21 +46,73 @@ color_cal_matrix = [
 white_bal_matrix = [1.5150, 1, 1.1048]
 gain = 1
 
+# a = [[white_bal_matrix[0],0.0,0.0],
+#      [0.0,white_bal_matrix[1],0.0],
+#      [0.0,0.0,white_bal_matrix[2]]]
+# b = color_cal_matrix
+
+# [a[0][0]*b[0][0] + a[0][1]*b[1][0] + a[0][2]*b[2][0],
+#  a[0][0]*b[0][1] + a[0][1]*b[1][1] + a[0][2]*b[2][1],
+#  a[0][0]*b[0][2] + a[0][1]*b[1][2] + a[0][2]*b[2][2]],
+#
+# [a[1][0]*b[0][0] + a[1][1]*b[1][0] + a[1][2]*b[2][0],
+#  a[1][0]*b[0][1] + a[1][1]*b[1][1] + a[1][2]*b[2][1],
+#  a[1][0]*b[0][2] + a[1][1]*b[1][2] + a[1][2]*b[2][2]],
+#
+# [a[2][0]*b[0][0] + a[2][1]*b[1][0] + a[2][2]*b[2][0],
+#  a[2][0]*b[0][1] + a[2][1]*b[1][1] + a[2][2]*b[2][1],
+#  a[2][0]*b[0][2] + a[2][1]*b[1][2] + a[2][2]*b[2][2]],
+
+# [a[0][0]*b[0][0]                                    ,
+#  a[0][0]*b[0][1]                                    ,
+#  a[0][0]*b[0][2]                                    ],
+#
+# [                  a[1][1]*b[1][0]                  ,
+#                    a[1][1]*b[1][1]                  ,
+#                    a[1][1]*b[1][2]                  ],
+#
+# [                                    a[2][2]*b[2][0],
+#                                      a[2][2]*b[2][1],
+#                                      a[2][2]*b[2][2]],
+
+
+
 final_color_correction_matrix = [
-	# DDR 2018-04-16: We may need to apply the white bal matrix 012,012,012 instead of 000,111,222. However, this is how the camera does it at the moment.
+        # [a[0][0]*b[0][0] + 0.0             + 0.0            ,
+        #  0.0             + a[0][1]*b[1][1] + 0.0            ,
+        #  0.0             + 0.0             + a[0][2]*b[2][2]],
+        # 
+        # [a[1][0]*b[0][0] + 0.0             + 0.0            ,
+        #  0.0             + a[1][1]*b[1][1] + 0.0            ,
+        #  0.0             + 0.0             + a[1][2]*b[2][2]],
+        # 
+        # [a[2][0]*b[0][0] + 0.0             + 0.0            ,
+        #  0.0             + a[2][1]*b[1][1] + 0.0            ,
+        #  0.0             + 0.0             + a[2][2]*b[2][2]]
 	[color_cal_matrix[0][0] * white_bal_matrix[0] * gain,
-	 color_cal_matrix[0][1] * white_bal_matrix[0] * gain,
-	 color_cal_matrix[0][2] * white_bal_matrix[0] * gain],
-
-	[color_cal_matrix[1][0] * white_bal_matrix[1] * gain,
+	 color_cal_matrix[0][1] * white_bal_matrix[1] * gain,
+	 color_cal_matrix[0][2] * white_bal_matrix[2] * gain],
+        
+	[color_cal_matrix[1][0] * white_bal_matrix[0] * gain,
 	 color_cal_matrix[1][1] * white_bal_matrix[1] * gain,
-	 color_cal_matrix[1][2] * white_bal_matrix[1] * gain],
+	 color_cal_matrix[1][2] * white_bal_matrix[2] * gain],
+        
+	[color_cal_matrix[2][0] * white_bal_matrix[0] * gain,
+	 color_cal_matrix[2][1] * white_bal_matrix[1] * gain,
+	 color_cal_matrix[2][2] * white_bal_matrix[2] * gain]
 
-	[color_cal_matrix[2][0] * white_bal_matrix[2] * gain,
-	 color_cal_matrix[2][1] * white_bal_matrix[2] * gain,
-	 color_cal_matrix[2][2] * white_bal_matrix[2] * gain],
+	#[white_bal_matrix[0] * color_cal_matrix[0][0] * gain,
+	# white_bal_matrix[0] * color_cal_matrix[0][1] * gain,
+	# white_bal_matrix[0] * color_cal_matrix[0][2] * gain],
+        #                                                
+	#[white_bal_matrix[1] * color_cal_matrix[1][0] * gain,
+	# white_bal_matrix[1] * color_cal_matrix[1][1] * gain,
+	# white_bal_matrix[1] * color_cal_matrix[1][2] * gain],
+        #                                                
+	#[white_bal_matrix[2] * color_cal_matrix[2][0] * gain,
+	# white_bal_matrix[2] * color_cal_matrix[2][1] * gain,
+	# white_bal_matrix[2] * color_cal_matrix[2][2] * gain]
 ]
-
 
 c2b = lambda f: bytes([f>>8]) # channel to byte - discard some information to get 8 bit colour from 16. Used for .data files, which are importable into gimp.
 
@@ -305,7 +359,7 @@ class RawFrameChannels():
 	# Implemented as a frame-caching class because bilinear debayering is hard to implement on a stream, doubly so considering ignoring out-of-bounds pixels.
 	
 	def __init__(self, video):
-		self.frame_data = video.read(bytes_per_frame)
+		self.frame_data = array.array('H', video.read(bytes_per_frame))
 		raw_data.write(self.frame_data)
 	
 	# So, this demands a bit of an explanation. And maybe an apology. There
@@ -431,10 +485,7 @@ for frame in range(start_frame, end_frame):
 			# Gamma correction. (This is separate from the linear RGB to sRGB conversion. sRGB is normally applied by the program viewing the data - so we don't include it as a step here, because then we'd double-apply it.)
 			# The following is the formula one might use, but we have a lookup table we use instead.
 			# > channel = int(pow(channel/65535, 1/2.2) * 65535)
-			lookup = channel>>4
-			if lookup > 4096: lookup = 4095
-			if lookup < 0: lookup = 0
-			channel = gamma_lookup_table[lookup]
+			channel = gamma_lookup_table[channel>>4]
 			dat_gamma.write(bytes([channel]))
 	
 	raw_data.close()
