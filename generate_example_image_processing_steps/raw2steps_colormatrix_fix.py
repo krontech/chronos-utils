@@ -43,7 +43,8 @@ color_cal_matrix = [
 	[-0.3219, +1.6901, -0.3811],
 	[-0.0614, -0.6409, +1.5258],
 ]
-white_bal_matrix = [1.5150, 1, 1.1048]
+#white_bal_matrix = [1.5150, 1, 1.1048]
+white_bal_matrix = [1, 1, 1]
 gain = 1
 
 # a = [[white_bal_matrix[0],0.0,0.0],
@@ -359,7 +360,7 @@ class RawFrameChannels():
 	# Implemented as a frame-caching class because bilinear debayering is hard to implement on a stream, doubly so considering ignoring out-of-bounds pixels.
 	
 	def __init__(self, video):
-		self.frame_data = array.array('H', video.read(bytes_per_frame))
+		self.frame_data = video.read(bytes_per_frame)
 		raw_data.write(self.frame_data)
 	
 	# So, this demands a bit of an explanation. And maybe an apology. There

@@ -88,30 +88,32 @@ def getPixel(rawImage, x, y):
 #===============================================================================================================
 # From here down is the test
 
-integrationGradientEW = []
-for y in range(vres/2):
-    integrationGradientEW.append(array.array('i', hres))
-
-integrationGradientNS = []
+integrationGradientEW = {}
+integrationGradientNS = {}
 for y in range(vres):
-    integrationGradientEW.append(array.array('i', hres/2))
+    integrationGradientEW[y] = {}
+    integrationGradientEW[y] = {}
 
 
-for y in range(vres>>1):
+for y in range(vres):
     for x in range(hres):
         integrationGradientEW[y][x] = (1  * getPixel(rawImage, x-2, y) +
                                        -3 * getPixel(rawImage, x-1, y) +
                                        4  * getPixel(rawImage,   x, y) +
                                        -3 * getPixel(rawImage, x+1, y) +
                                        1  * getPixel(rawImage, x+2, y)) / 6
+        if y % 1 == 1:
+            integrationGradientEW[y][x] = -integrationGradientEW[y][x]
 
 for y in range(vres):
-    for x in range(hres>>1):
-        integrationGradientNS[y][x] = (1  * getPixel(rawImage, x-2, y) +
-                                       -3 * getPixel(rawImage, x-1, y) +
-                                       4  * getPixel(rawImage,   x, y) +
-                                       -3 * getPixel(rawImage, x+1, y) +
-                                       1  * getPixel(rawImage, x+2, y)) / 6
+    for x in range(hres):
+        integrationGradientNS[y][x] = (1  * getPixel(rawImage, x, y-2) +
+                                       -3 * getPixel(rawImage, x, y-1) +
+                                       4  * getPixel(rawImage, x,   y) +
+                                       -3 * getPixel(rawImage, x, y+1) +
+                                       1  * getPixel(rawImage, x, y+2)) / 6
         
+        if x % 1 == 1:
+            integrationGradientEW[y][x] = -integrationGradientEW[y][x]
 
         
