@@ -15,6 +15,7 @@ import array
 import getopt
 import platform
 import errno
+import math
 
 
 inputFilename = "S:\\KronTech\\Raw\\testScene_000002.dng"
@@ -235,7 +236,36 @@ def getValue(data, x, y):
     while y < 0: y+= 2
     while y >= len(data): y -= 2
     return data[y][x]
-    
+
+
+rgb_to_lab = [[ 0.412453, 0.357580, 0.180423 ],
+              [ 0.212671, 0.715160, 0.072169 ],
+              [ 0.019334, 0.119193, 0.950227 ]]
+xyz_cam = [[0.0,0.0,0.0],
+           [0.0,0.0,0.0],
+           [0.0,0.0,0.0]]
+color_cal_matrix = [[ 1.2330,  0.6468, -0.7764],
+	            [-0.3219,  1.6901, -0.3811],
+	            [-0.0614, -0.6409,  1.5258]]
+d65_white = [0.950456, 1.0, 1.088754]
+
+for i in range(3):
+    for j in range(3):
+        for k in range(3):
+            xyz_cam[i][j] += rgb_to_lab[i][k] * color_cal_matrix[k][j] / d65_white[i]
+
+def getLab(data, x, y):
+    pixel = getValue(data, x, y)
+    out = [xyz_cam[0][0]*pixel[0] + xyz_cam[0][1]*pixel[1] + xyz_cam[0][2]*pixel[2],
+           xyz_cam[1][0]*pixel[0] + xyz_cam[1][1]*pixel[1] + xyz_cam[1][2]*pixel[2],
+           xyz_cam[2][0]*pixel[0] + xyz_cam[2][1]*pixel[1] + xyz_cam[2][2]*pixel[2]]
+    return [(116*out[1]-16),
+            (500*(out[0]-out[1])),
+            (200*(out[1]-out[2]))]
+           
+
+
+
 
 rgbOut = {}
 for y in range(vres):
@@ -246,31 +276,70 @@ for y in range(vres):
     homogMap[y] = {}
     
 # Homogeneity Map
+
 print('-------------------------------------------------')
 print('Selecting data')
 homogMap_out = open(outputBase+'003_homogMap.data', 'wb')
+ahdMap_out = open(outputBase+'003c_ahd_map.data', 'wb')
+homogMap_H_out = open(outputBase+'003a_homog_H.data', 'wb')
+homogMap_V_out = open(outputBase+'003b_homog_V.data', 'wb')
 rgbOut_out = open(outputBase+'004_rgb_out.data', 'wb')
-gutter = 100
+ahdOut_out = open(outputBase+'004b_ahd_out.data', 'wb')
+gutter = 0
 for y in range(vres):
     for x in range(hres):
-        p = [getValue(rgbInterpolation_V, x, y-2),
-             getValue(rgbInterpolation_V, x, y-1),
-             getValue(rgbInterpolation_V, x, y),
-             getValue(rgbInterpolation_V, x, y+1),
-             getValue(rgbInterpolation_V, x, y+2)]
-        v_homog = (abs(1  * p[0][0] +   -3 * p[1][0] +     4  * p[2][0] +   -3 * p[3][0] +     1  * p[4][0]) +
-                   abs(1  * p[0][1] +   -3 * p[1][1] +     4  * p[2][1] +   -3 * p[3][1] +     1  * p[4][1]) +
-                   abs(1  * p[0][2] +   -3 * p[1][2] +     4  * p[2][2] +   -3 * p[3][2] +     1  * p[4][2]))
-        p = [getValue(rgbInterpolation_H, x-2, y),
-             getValue(rgbInterpolation_H, x-1, y),
-             getValue(rgbInterpolation_H, x, y),
-             getValue(rgbInterpolation_H, x+1, y),
-             getValue(rgbInterpolation_H, x+2, y)]
-        h_homog = (abs(1  * p[0][0] +   -3 * p[1][0] +     4  * p[2][0] +   -3 * p[3][0] +     1  * p[4][0]) +
-                   abs(1  * p[0][1] +   -3 * p[1][1] +     4  * p[2][1] +   -3 * p[3][1] +     1  * p[4][1]) +
-                   abs(1  * p[0][2] +   -3 * p[1][2] +     4  * p[2][2] +   -3 * p[3][2] +     1  * p[4][2]))
+        #p = [getValue(rgbInterpolation_V, x, y-2),
+        #     getValue(rgbInterpolation_V, x, y-1),
+        #     getValue(rgbInterpolation_V, x, y),
+        #     getValue(rgbInterpolation_V, x, y+1),
+        #     getValue(rgbInterpolation_V, x, y+2)]
+        #v_homog = (abs(1  * p[0][0] +   -3 * p[1][0] +     4  * p[2][0] +   -3 * p[3][0] +     1  * p[4][0]) +
+        #           abs(1  * p[0][1] +   -3 * p[1][1] +     4  * p[2][1] +   -3 * p[3][1] +     1  * p[4][1]) +
+        #           abs(1  * p[0][2] +   -3 * p[1][2] +     4  * p[2][2] +   -3 * p[3][2] +     1  * p[4][2]))
 
-        val = h_homog - v_homog
+        p = [[getValue(rgbInterpolation_V, x-1, y-1), getValue(rgbInterpolation_V, x, y-1), getValue(rgbInterpolation_V, x+1, y-1)],
+             [getValue(rgbInterpolation_V, x-1, y  ), getValue(rgbInterpolation_V, x, y  ), getValue(rgbInterpolation_V, x+1, y  )],
+             [getValue(rgbInterpolation_V, x-1, y+1), getValue(rgbInterpolation_V, x, y+1), getValue(rgbInterpolation_V, x+1, y+1)]]
+
+        h_homog = (abs(-1  * p[0][0][0] +   2 * p[1][0][0] +     -1  * p[2][0][0]) +
+                   abs(-1  * p[0][0][1] +   2 * p[1][0][1] +     -1  * p[2][0][1]) +
+                   abs(-1  * p[0][0][2] +   2 * p[1][0][2] +     -1  * p[2][0][2]) +
+                   abs(-1  * p[0][1][0] +   2 * p[1][1][0] +     -1  * p[2][1][0]) +
+                   abs(-1  * p[0][1][1] +   2 * p[1][1][1] +     -1  * p[2][1][1]) +
+                   abs(-1  * p[0][1][2] +   2 * p[1][1][2] +     -1  * p[2][1][2]) +
+                   abs(-1  * p[0][2][0] +   2 * p[1][2][0] +     -1  * p[2][2][0]) +
+                   abs(-1  * p[0][2][1] +   2 * p[1][2][1] +     -1  * p[2][2][1]) +
+                   abs(-1  * p[0][2][2] +   2 * p[1][2][2] +     -1  * p[2][2][2]))
+
+        p = [[getValue(rgbInterpolation_H, x-1, y-1), getValue(rgbInterpolation_H, x, y-1), getValue(rgbInterpolation_H, x+1, y-1)],
+             [getValue(rgbInterpolation_H, x-1, y  ), getValue(rgbInterpolation_H, x, y  ), getValue(rgbInterpolation_H, x+1, y  )],
+             [getValue(rgbInterpolation_H, x-1, y+1), getValue(rgbInterpolation_H, x, y+1), getValue(rgbInterpolation_H, x+1, y+1)]]
+
+        v_homog = (abs(-1  * p[0][0][0] +   2 * p[0][1][0] +     -1  * p[0][2][0]) +
+                   abs(-1  * p[0][0][1] +   2 * p[0][1][1] +     -1  * p[0][2][1]) +
+                   abs(-1  * p[0][0][2] +   2 * p[0][1][2] +     -1  * p[0][2][2]) +
+                   abs(-1  * p[1][0][0] +   2 * p[1][1][0] +     -1  * p[1][2][0]) +
+                   abs(-1  * p[1][0][1] +   2 * p[1][1][1] +     -1  * p[1][2][1]) +
+                   abs(-1  * p[1][0][2] +   2 * p[1][1][2] +     -1  * p[1][2][2]) +
+                   abs(-1  * p[2][0][0] +   2 * p[2][1][0] +     -1  * p[2][2][0]) +
+                   abs(-1  * p[2][0][1] +   2 * p[2][1][1] +     -1  * p[2][2][1]) +
+                   abs(-1  * p[2][0][2] +   2 * p[2][1][2] +     -1  * p[2][2][2]))
+
+        #p = [getValue(rgbInterpolation_H, x-2, y),
+        #     getValue(rgbInterpolation_H, x-1, y),
+        #     getValue(rgbInterpolation_H, x, y),
+        #     getValue(rgbInterpolation_H, x+1, y),
+        #     getValue(rgbInterpolation_H, x+2, y)]
+        #h_homog = (abs(1  * p[0][0] +   -3 * p[1][0] +     4  * p[2][0] +   -3 * p[3][0] +     1  * p[4][0]) +
+        #           abs(1  * p[0][1] +   -3 * p[1][1] +     4  * p[2][1] +   -3 * p[3][1] +     1  * p[4][1]) +
+        #           abs(1  * p[0][2] +   -3 * p[1][2] +     4  * p[2][2] +   -3 * p[3][2] +     1  * p[4][2]))
+        #h_homog *= h_homog
+
+        homogMap_V_out.write(struct.pack("<H", max(min(v_homog, 65535), 0)))
+        homogMap_H_out.write(struct.pack("<H", max(min(h_homog, 65535), 0)))
+
+        
+        val = v_homog - h_homog
         homogMap[y][x] = val
         if homogMap[y][x] > 32767: homogMap[y][x] = 32767
         if homogMap[y][x] < -32767: homogMap[y][x] = -32767
@@ -286,7 +355,63 @@ for y in range(vres):
         homogMap_out.write(struct.pack("<H", homogMap[y][x] + 32768))
         rgbOut_out.write(struct.pack("<BBB", rgbOut[y][x][0]>>4, rgbOut[y][x][1]>>4, rgbOut[y][x][2]>>4))
 
+        # AHD original method
+        
+        lab = [[getLab(rgbInterpolation_H, x-1, y-1), getLab(rgbInterpolation_H, x, y-1), getLab(rgbInterpolation_H, x+1, y-1)],
+               [getLab(rgbInterpolation_H, x-1, y  ), getLab(rgbInterpolation_H, x, y  ), getLab(rgbInterpolation_H, x+1, y  )],
+               [getLab(rgbInterpolation_H, x-1, y+1), getLab(rgbInterpolation_H, x, y+1), getLab(rgbInterpolation_H, x+1, y+1)]]
+        h_ldiff = [abs(lab[1][1][0] - lab[0][1][0]),
+                  abs(lab[1][1][0] - lab[1][0][0]),
+                  abs(lab[1][1][0] - lab[2][1][0]),
+                  abs(lab[1][1][0] - lab[1][2][0])]
+        h_abdiff = [(lab[1][1][1] - lab[0][1][1])**2 + (lab[1][1][2] - lab[0][1][2])**2,
+                    (lab[1][1][1] - lab[1][0][1])**2 + (lab[1][1][2] - lab[1][0][2])**2,
+                    (lab[1][1][1] - lab[2][1][1])**2 + (lab[1][1][2] - lab[2][1][2])**2,
+                    (lab[1][1][1] - lab[1][2][1])**2 + (lab[1][1][2] - lab[1][2][2])**2]
+
+        lab = [[getLab(rgbInterpolation_V, x-1, y-1), getLab(rgbInterpolation_V, x, y-1), getLab(rgbInterpolation_V, x+1, y-1)],
+               [getLab(rgbInterpolation_V, x-1, y  ), getLab(rgbInterpolation_V, x, y  ), getLab(rgbInterpolation_V, x+1, y  )],
+               [getLab(rgbInterpolation_V, x-1, y+1), getLab(rgbInterpolation_V, x, y+1), getLab(rgbInterpolation_V, x+1, y+1)]]
+        v_ldiff = [abs(lab[1][1][0] - lab[0][1][0]),
+                  abs(lab[1][1][0] - lab[1][0][0]),
+                  abs(lab[1][1][0] - lab[2][1][0]),
+                  abs(lab[1][1][0] - lab[1][2][0])]
+        v_abdiff = [(lab[1][1][1] - lab[0][1][1])**2 + (lab[1][1][2] - lab[0][1][2])**2,
+                    (lab[1][1][1] - lab[1][0][1])**2 + (lab[1][1][2] - lab[1][0][2])**2,
+                    (lab[1][1][1] - lab[2][1][1])**2 + (lab[1][1][2] - lab[2][1][2])**2,
+                    (lab[1][1][1] - lab[1][2][1])**2 + (lab[1][1][2] - lab[1][2][2])**2]
+
+        leps = min(max(h_ldiff[0], h_ldiff[1]),
+                   max(v_ldiff[2], v_ldiff[3]))
+        abeps = min(max(h_abdiff[0], h_abdiff[1]),
+                    max(v_abdiff[2], v_abdiff[3]))
+
+        h_homog = 0
+        v_homog = 0
+        for i in range(4):
+            if h_ldiff[i] <= leps and h_abdiff[i] <= abeps:
+                h_homog += 1
+            if v_ldiff[i] <= leps and v_abdiff[i] <= abeps:
+                v_homog += 1
+        
+        if v_homog > h_homog:
+            ahdMap_out.write(struct.pack("<H", 50000))
+            ahdOut_out.write(struct.pack("<BBB", rgbInterpolation_V[y][x][0]>>4, rgbInterpolation_V[y][x][1]>>4, rgbInterpolation_V[y][x][2]>>4))
+        elif v_homog < h_homog:
+            ahdMap_out.write(struct.pack("<H", 10000))
+            ahdOut_out.write(struct.pack("<BBB", rgbInterpolation_H[y][x][0]>>4, rgbInterpolation_H[y][x][1]>>4, rgbInterpolation_H[y][x][2]>>4))
+        else:
+            ahdMap_out.write(struct.pack("<H", 30000))
+            ahdOut_out.write(struct.pack("<BBB",
+                                         (rgbInterpolation_H[y][x][0]+rgbInterpolation_V[y][x][0])>>5,
+                                         (rgbInterpolation_H[y][x][1]+rgbInterpolation_V[y][x][1])>>5,
+                                         (rgbInterpolation_H[y][x][2]+rgbInterpolation_V[y][x][2])>>5))
+
 homogMap_out.close()
+homogMap_H_out.close()
+homogMap_V_out.close()
 rgbOut_out.close()
+ahdOut_out.close()
+ahdMap_out.close()
 
 print('Done')
