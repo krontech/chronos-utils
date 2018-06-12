@@ -297,33 +297,53 @@ for y in range(vres):
         #           abs(1  * p[0][1] +   -3 * p[1][1] +     4  * p[2][1] +   -3 * p[3][1] +     1  * p[4][1]) +
         #           abs(1  * p[0][2] +   -3 * p[1][2] +     4  * p[2][2] +   -3 * p[3][2] +     1  * p[4][2]))
 
-        p = [[getValue(rgbInterpolation_V, x-1, y-1), getValue(rgbInterpolation_V, x, y-1), getValue(rgbInterpolation_V, x+1, y-1)],
-             [getValue(rgbInterpolation_V, x-1, y  ), getValue(rgbInterpolation_V, x, y  ), getValue(rgbInterpolation_V, x+1, y  )],
-             [getValue(rgbInterpolation_V, x-1, y+1), getValue(rgbInterpolation_V, x, y+1), getValue(rgbInterpolation_V, x+1, y+1)]]
+        p = [[getLab(rgbInterpolation_H, x-1, y-1), getLab(rgbInterpolation_H, x, y-1), getLab(rgbInterpolation_H, x+1, y-1)],
+             [getLab(rgbInterpolation_H, x-1, y  ), getLab(rgbInterpolation_H, x, y  ), getLab(rgbInterpolation_H, x+1, y  )],
+             [getLab(rgbInterpolation_H, x-1, y+1), getLab(rgbInterpolation_H, x, y+1), getLab(rgbInterpolation_H, x+1, y+1)]]
+        #p = [[getValue(rgbInterpolation_V, x-1, y-1), getValue(rgbInterpolation_V, x, y-1), getValue(rgbInterpolation_V, x+1, y-1)],
+        #     [getValue(rgbInterpolation_V, x-1, y  ), getValue(rgbInterpolation_V, x, y  ), getValue(rgbInterpolation_V, x+1, y  )],
+        #     [getValue(rgbInterpolation_V, x-1, y+1), getValue(rgbInterpolation_V, x, y+1), getValue(rgbInterpolation_V, x+1, y+1)]]
 
-        h_homog = (abs(-1  * p[0][0][0] +   2 * p[1][0][0] +     -1  * p[2][0][0]) +
-                   abs(-1  * p[0][0][1] +   2 * p[1][0][1] +     -1  * p[2][0][1]) +
-                   abs(-1  * p[0][0][2] +   2 * p[1][0][2] +     -1  * p[2][0][2]) +
-                   abs(-1  * p[0][1][0] +   2 * p[1][1][0] +     -1  * p[2][1][0]) +
-                   abs(-1  * p[0][1][1] +   2 * p[1][1][1] +     -1  * p[2][1][1]) +
-                   abs(-1  * p[0][1][2] +   2 * p[1][1][2] +     -1  * p[2][1][2]) +
-                   abs(-1  * p[0][2][0] +   2 * p[1][2][0] +     -1  * p[2][2][0]) +
-                   abs(-1  * p[0][2][1] +   2 * p[1][2][1] +     -1  * p[2][2][1]) +
-                   abs(-1  * p[0][2][2] +   2 * p[1][2][2] +     -1  * p[2][2][2]))
 
+        p_l = [[p[0][0][0]+p[0][0][1]+p[0][0][2], p[0][1][0]+p[0][1][1]+p[0][1][2], p[0][2][0]+p[0][2][1]+p[0][2][2]],
+               [p[1][0][0]+p[1][0][1]+p[1][0][2], p[1][1][0]+p[1][1][1]+p[1][1][2], p[1][2][0]+p[1][2][1]+p[1][2][2]],
+               [p[2][0][0]+p[2][0][1]+p[2][0][2], p[2][1][0]+p[2][1][1]+p[2][1][2], p[2][2][0]+p[2][2][1]+p[2][2][2]]]
+        
+        #h_homog = (abs(-1  * p[0][0][0] +   2 * p[1][0][0] +     -1  * p[2][0][0]) +
+        #           abs(-1  * p[0][0][1] +   2 * p[1][0][1] +     -1  * p[2][0][1]) +
+        #           abs(-1  * p[0][0][2] +   2 * p[1][0][2] +     -1  * p[2][0][2]) +
+        #           abs(-1  * p[0][1][0] +   2 * p[1][1][0] +     -1  * p[2][1][0]) +
+        #           abs(-1  * p[0][1][1] +   2 * p[1][1][1] +     -1  * p[2][1][1]) +
+        #           abs(-1  * p[0][1][2] +   2 * p[1][1][2] +     -1  * p[2][1][2]) +
+        #           abs(-1  * p[0][2][0] +   2 * p[1][2][0] +     -1  * p[2][2][0]) +
+        #           abs(-1  * p[0][2][1] +   2 * p[1][2][1] +     -1  * p[2][2][1]) +
+        #           abs(-1  * p[0][2][2] +   2 * p[1][2][2] +     -1  * p[2][2][2]))
+
+        h_homog = (abs(-1  * p_l[0][0] +   2 * p_l[1][0] +     -1  * p_l[2][0]) +
+                   abs(-1  * p_l[0][1] +   2 * p_l[1][1] +     -1  * p_l[2][1]) +
+                   abs(-1  * p_l[0][2] +   2 * p_l[1][2] +     -1  * p_l[2][2]))
+        
         p = [[getValue(rgbInterpolation_H, x-1, y-1), getValue(rgbInterpolation_H, x, y-1), getValue(rgbInterpolation_H, x+1, y-1)],
              [getValue(rgbInterpolation_H, x-1, y  ), getValue(rgbInterpolation_H, x, y  ), getValue(rgbInterpolation_H, x+1, y  )],
              [getValue(rgbInterpolation_H, x-1, y+1), getValue(rgbInterpolation_H, x, y+1), getValue(rgbInterpolation_H, x+1, y+1)]]
 
-        v_homog = (abs(-1  * p[0][0][0] +   2 * p[0][1][0] +     -1  * p[0][2][0]) +
-                   abs(-1  * p[0][0][1] +   2 * p[0][1][1] +     -1  * p[0][2][1]) +
-                   abs(-1  * p[0][0][2] +   2 * p[0][1][2] +     -1  * p[0][2][2]) +
-                   abs(-1  * p[1][0][0] +   2 * p[1][1][0] +     -1  * p[1][2][0]) +
-                   abs(-1  * p[1][0][1] +   2 * p[1][1][1] +     -1  * p[1][2][1]) +
-                   abs(-1  * p[1][0][2] +   2 * p[1][1][2] +     -1  * p[1][2][2]) +
-                   abs(-1  * p[2][0][0] +   2 * p[2][1][0] +     -1  * p[2][2][0]) +
-                   abs(-1  * p[2][0][1] +   2 * p[2][1][1] +     -1  * p[2][2][1]) +
-                   abs(-1  * p[2][0][2] +   2 * p[2][1][2] +     -1  * p[2][2][2]))
+        p_l = [[p[0][0][0]+p[0][0][1]+p[0][0][2], p[0][1][0]+p[0][1][1]+p[0][1][2], p[0][2][0]+p[0][2][1]+p[0][2][2]],
+               [p[1][0][0]+p[1][0][1]+p[1][0][2], p[1][1][0]+p[1][1][1]+p[1][1][2], p[1][2][0]+p[1][2][1]+p[1][2][2]],
+               [p[2][0][0]+p[2][0][1]+p[2][0][2], p[2][1][0]+p[2][1][1]+p[2][1][2], p[2][2][0]+p[2][2][1]+p[2][2][2]]]
+
+        #v_homog = (abs(-1  * p[0][0][0] +   2 * p[0][1][0] +     -1  * p[0][2][0]) +
+        #           abs(-1  * p[0][0][1] +   2 * p[0][1][1] +     -1  * p[0][2][1]) +
+        #           abs(-1  * p[0][0][2] +   2 * p[0][1][2] +     -1  * p[0][2][2]) +
+        #           abs(-1  * p[1][0][0] +   2 * p[1][1][0] +     -1  * p[1][2][0]) +
+        #           abs(-1  * p[1][0][1] +   2 * p[1][1][1] +     -1  * p[1][2][1]) +
+        #           abs(-1  * p[1][0][2] +   2 * p[1][1][2] +     -1  * p[1][2][2]) +
+        #           abs(-1  * p[2][0][0] +   2 * p[2][1][0] +     -1  * p[2][2][0]) +
+        #           abs(-1  * p[2][0][1] +   2 * p[2][1][1] +     -1  * p[2][2][1]) +
+        #           abs(-1  * p[2][0][2] +   2 * p[2][1][2] +     -1  * p[2][2][2]))
+
+        v_homog = (abs(-1  * p_l[0][0] +   2 * p_l[1][0] +     -1  * p_l[2][0]) +
+                   abs(-1  * p_l[0][1] +   2 * p_l[1][1] +     -1  * p_l[2][1]) +
+                   abs(-1  * p_l[0][2] +   2 * p_l[1][2] +     -1  * p_l[2][2]))
 
         #p = [getValue(rgbInterpolation_H, x-2, y),
         #     getValue(rgbInterpolation_H, x-1, y),
@@ -361,9 +381,9 @@ for y in range(vres):
                [getLab(rgbInterpolation_H, x-1, y  ), getLab(rgbInterpolation_H, x, y  ), getLab(rgbInterpolation_H, x+1, y  )],
                [getLab(rgbInterpolation_H, x-1, y+1), getLab(rgbInterpolation_H, x, y+1), getLab(rgbInterpolation_H, x+1, y+1)]]
         h_ldiff = [abs(lab[1][1][0] - lab[0][1][0]),
-                  abs(lab[1][1][0] - lab[1][0][0]),
-                  abs(lab[1][1][0] - lab[2][1][0]),
-                  abs(lab[1][1][0] - lab[1][2][0])]
+                   abs(lab[1][1][0] - lab[1][0][0]),
+                   abs(lab[1][1][0] - lab[2][1][0]),
+                   abs(lab[1][1][0] - lab[1][2][0])]
         h_abdiff = [(lab[1][1][1] - lab[0][1][1])**2 + (lab[1][1][2] - lab[0][1][2])**2,
                     (lab[1][1][1] - lab[1][0][1])**2 + (lab[1][1][2] - lab[1][0][2])**2,
                     (lab[1][1][1] - lab[2][1][1])**2 + (lab[1][1][2] - lab[2][1][2])**2,
@@ -381,10 +401,10 @@ for y in range(vres):
                     (lab[1][1][1] - lab[2][1][1])**2 + (lab[1][1][2] - lab[2][1][2])**2,
                     (lab[1][1][1] - lab[1][2][1])**2 + (lab[1][1][2] - lab[1][2][2])**2]
 
-        leps = min(max(h_ldiff[0], h_ldiff[1]),
-                   max(v_ldiff[2], v_ldiff[3]))
-        abeps = min(max(h_abdiff[0], h_abdiff[1]),
-                    max(v_abdiff[2], v_abdiff[3]))
+        leps = min(max(h_ldiff[0], h_ldiff[2]),
+                   max(v_ldiff[1], v_ldiff[3]))
+        abeps = min(max(h_abdiff[0], h_abdiff[2]),
+                    max(v_abdiff[1], v_abdiff[3]))
 
         h_homog = 0
         v_homog = 0
