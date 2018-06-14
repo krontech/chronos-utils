@@ -171,7 +171,7 @@ for y in range(vres):
         idig_nesw[y][x] = 63 // (dig_nesw[y][x] or 1)
 
         # find the direction as one bit
-        dig_dir[y][x] = dig_ew[y][x] < dig_ns[y][x]
+        dig_dir[y][x] = dig_ew[y][x] <= dig_ns[y][x]
         
 print(' - writing')
 DIG_EW_out = open(outputBase+'002aa_DIG_delta_EW.data', 'wb')
@@ -239,6 +239,8 @@ for y in range(vres):
 greenInterp_out.close()
 
 
+
+
 #------------------------------------------------------------------------------------------
 print('004 - RGB interpolation stage 1')
 
@@ -269,6 +271,8 @@ for y in range(vres):
         rgbInterp_out.write(struct.pack("<H", rgbInterp_partial[y][x]))
 
 rgbInterp_out.close()
+
+
 
 
 #------------------------------------------------------------------------------------------
