@@ -150,7 +150,6 @@ IfdIdentifiers = [getattr(Tag,n)[0] for n in IfdNames]
 IfdTypes = [getattr(Tag,n)[1][0] for n in IfdNames]
 IfdLookup = dict(zip(IfdIdentifiers,IfdNames))
 
-
 class dngHeader(object):
     def __init__(self):
         self.IFDOffset = 8
@@ -325,8 +324,44 @@ def creation_date(path_to_file):
             # so we'll settle for when its content was last modified.
             return stat.st_mtime
 
+## Read the frame data out and convert it to 16-bpp
+def readFrame(file, width, length, bpp):
+    try:
+        if (bpp == 16):
+            return file.read(width*length*2)
+
+        elif (bpp == -12):
+            ## Legacy (and probably broken) 12-bpp unpacking.
+            frame = bytearray(width * length * 2)
+            for off in range(0, len(frame), 4):
+                pix = bytearray(file.read(3))
+                a = (pix[2] << 4) + ((pix[1] & 0x0f) << 12)
+                b = (pix[0] << 8) + ((pix[1] & 0xf0) << 0)
+                frame[off + 0] = (a & 0x00ff) >> 0
+                frame[off + 1] = (a & 0xff00) >> 8
+                frame[off + 2] = (b & 0x00ff) >> 0
+                frame[off + 3] = (b & 0xff00) >> 8
+
+            return frame
+
+        elif (bpp == 12):
+            ## Read and convert to 16-bpp.
+            frame = bytearray(width * length * 2)
+            for off in range(0, len(frame), 4):
+                pix = bytearray(file.read(3))
+                a = (pix[0] << 4) + ((pix[1] & 0xf0) << 8)
+                b = (pix[2] << 8) + ((pix[1] & 0x0f) << 4)
+                frame[off + 0] = (a & 0x00ff) >> 0
+                frame[off + 1] = (a & 0xff00) >> 8
+                frame[off + 2] = (b & 0x00ff) >> 0
+                frame[off + 3] = (b & 0xff00) >> 8
             
-def convertVideo(inputFilename, outputFilenameFormat, width, length, colour):
+            return frame
+    
+    except:
+        return None
+
+def convertVideo(inputFilename, outputFilenameFormat, width, length, colour, bpp):
     dngTemplate = DNG()
 
     creationTime = creation_date(inputFilename)
@@ -340,12 +375,11 @@ def convertVideo(inputFilename, outputFilenameFormat, width, length, colour):
             if exc.errno != errno.EEXIST:
                 raise
 
-    
     # set up the image binary data
     rawFile = open(inputFilename, "rb")
-    rawFrame = rawFile.read(width*length*2)
-    dngTemplate.ImageDataStrips.append(rawFile.read(width*length*2))
-                
+    rawFrame = readFrame(rawFile, width, length, bpp)
+    dngTemplate.ImageDataStrips.append(rawFrame)
+
     # set up the FULL IFD
     mainIFD = dngIFD()
     mainTagStripOffset = dngTag(Tag.StripOffsets, [0])
@@ -404,12 +438,12 @@ def convertVideo(inputFilename, outputFilenameFormat, width, length, colour):
         outfile.close()
 
         # go onto next frame
-        rawFrame = rawFile.read(width*length*2)
+        rawFrame = readFrame(rawFile, width, length, bpp)
         frameNum += 1
 
 
 
-#===============================================================================================================
+#=========================================================================================================
 helptext = '''pyraw2dng.py - Command line converter from Chronos1.4 raw format to DNG image sequence
 Version 0.1
 Copyright 2018 Kron Technologies Inc.
@@ -420,6 +454,8 @@ Options:
  --help      Display this help message
  -M/--mono   Raw data is mono
  -C/--color  Raw data is colour
+ -p/--packed Raw 12-bit packed data (default: 16-bit)
+ --legacy    Legacy 12-bit packed data (v0.3.0 and earlier)
  -w/--width  Frame width
  -l/--length Frame length
  -h/--height Frame length (please use only one)
@@ -430,7 +466,7 @@ Examples:
   pyraw2dng.py -M -w 1280 -l 1024 test.raw
   pyraw2dng.py -w 336 -l 96 test.raw test_output/test_%06d.DNG
 '''
- 
+
 
 def main():
     width = None
@@ -438,10 +474,11 @@ def main():
     colour = True
     inputFilename = None
     outputFilenameFormat = None
-    
+    bpp = 16
     
     try:
-        options, args = getopt.getopt(sys.argv[1:], 'CMw:l:h:', ['help', 'color', 'mono', 'width', 'length', 'height'])
+        options, args = getopt.getopt(sys.argv[1:], 'CMpw:l:h:',
+            ['help', 'color', 'packed', 'mono', 'width', 'length', 'height', 'oldpack'])
     except getopt.error:
         print 'Error: You tried to use an unknown option.\n\n'
         print helptext
@@ -461,7 +498,13 @@ def main():
 
         elif o in ('-M', '--mono'):
             colour = False
-
+        
+        elif o in ('-p', '--packed'):
+            bpp = 12
+        
+        elif o in ('--oldpack'):
+            bpp = -12
+        
         elif o in ('-l', '-h', '--length', '--height'):
             length = int(a)
 
@@ -477,13 +520,12 @@ def main():
         dirname = os.path.splitext(inputFilename)[0]
         basename = os.path.basename(inputFilename)
         print basename
-        outputFilenameFormat = dirname + '/' + basename + '_%06d.DNG'
+        outputFilenameFormat = dirname + '/frame_%06d.DNG'
     else:
         inputFilename = args[0]
         outputFilenameFormat = args[1]
 
-
-    convertVideo(inputFilename, outputFilenameFormat, width, length, colour)
+    convertVideo(inputFilename, outputFilenameFormat, width, length, colour, bpp)
 
 if __name__ == "__main__":
     main()
