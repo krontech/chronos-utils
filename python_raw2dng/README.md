@@ -4,7 +4,7 @@ pyraw2dng
 Overview
 --------
 
-This is meant to be a cross platform example on how to convert the raw (16bit standard) images from the Chronos1.4 high speed cameras to DNG.  This script will only work with 16 bit standard files, not the right-aligned "Raw16RJ" format.
+This is meant to be a cross platform example on how to convert the raw (16bit standard) images from the Chronos1.4 high speed cameras to DNG.  This script will only work with 16 bit standard files and 12-bit packed files, but not the right-aligned "Raw16RJ" format, which has been removed as of software v0.3.0.
 
 The script will not autodetect any settings - you must provide the correct frame size in the command line.
 
@@ -32,6 +32,15 @@ python pyraw2dng.py -w (width) -l (length) (filename.raw)
 
 For Linux:
 ./pyraw2dng.py -w (width) -l (length) (filename.raw)
+
+Optional arguments to add to decode 12-bit videos:
+The --packed option will decode the raw file as a 12-bit packed format
+generated from cameras with a software version v0.3.1 and newer.
+The --oldpack option will attempt to decode the raw file as a 12-bit
+packed format generated from software versions v0.3.0 and older. However
+due bugs in this encoding format, there may be off-by-one pixel errors
+in the encoded files. This is most noticeable as colour corruption
+after demosiac.
 
 If the script runs successfully, there will be a folder with the same name as your file containing the .dng images and the text "(filename).raw" will appear in the terminal.
 
