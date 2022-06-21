@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/python
 
 # standard python imports
 import sys
@@ -28,7 +28,7 @@ class Type:
     IFD = (13,4) # IFD (Same as Long)
 
 Types = [(getattr(Type,n),n) for n in dir(Type) if n!="__doc__" and n!="__module__"]
-Types.sort()
+
 
 class Tag:
     Invalid                     = (0,Type.Invalid)
@@ -144,11 +144,11 @@ class Tag:
     BaselineExposureOffset      = (51109,Type.Srational) # 1.4 Spec says rational but mentions negative values?
     NewRawImageDigest           = (51111,Type.Byte)
 
-IfdNames = [n for n in dir(Tag) if n!="__doc__" and n!="__module__"]
-IfdValues = [getattr(Tag,n) for n in IfdNames]
-IfdIdentifiers = [getattr(Tag,n)[0] for n in IfdNames]
-IfdTypes = [getattr(Tag,n)[1][0] for n in IfdNames]
-IfdLookup = dict(zip(IfdIdentifiers,IfdNames))
+# IfdNames = [n for n in dir(Tag) if n!="__doc__" and n!="__module__"]
+# IfdValues = [getattr(Tag,n) for n in IfdNames]
+# IfdIdentifiers = [getattr(Tag,n) for n in IfdNames]
+# IfdTypes = [getattr(Tag,n) for n in IfdNames]
+# IfdLookup = dict(list(zip(IfdIdentifiers,IfdNames)))
 
 class dngHeader(object):
     def __init__(self):
@@ -188,12 +188,12 @@ class dngTag(object):
         elif self.DataType == Type.Rational:  self.Value = struct.pack('<%sL' % (len(value)*2), *[item for sublist in value for item in sublist]) # ... This... uhm... flattens the list of two value pairs
         elif self.DataType == Type.Srational: self.Value = struct.pack('<%sl' % (len(value)*2), *[item for sublist in value for item in sublist])
         elif self.DataType == Type.Ascii:
-            self.Value = struct.pack('<%scx0L' % len(value), *value)
+            self.Value = struct.pack('<%scx0L' % len(value), *[bytes(x, 'utf-8') for x in value])
             self.DataCount += 1
         elif self.DataType == Type.IFD:
-            self.Value = "\x00\x00\x00\x00"
+            self.Value = b'\x00\x00\x00\x00'
             self.subIFD = value[0]
-        self.Value += '\x00'*(((len(self.Value)+3) & 0xFFFFFFFC) - len(self.Value))
+        self.Value += b'\x00'*(((len(self.Value)+3) & 0xFFFFFFFC) - len(self.Value))
         
 
     def setBuffer(self, buf, tagOffset, dataOffset):
@@ -298,7 +298,7 @@ class DNG(object):
         return (totalLength + 3) & 0xFFFFFFFC
 
     def write(self):
-        struct.pack_into("<ccbbI", self.buf, 0, 'I', 'I', 0x2A, 0x00, 8) # assume the first IFD happens immediately after header
+        struct.pack_into("<ccbbI", self.buf, 0, b'I', b'I', 0x2A, 0x00, 8) # assume the first IFD happens immediately after header
 
         for ifd in self.IFDs:
             ifd.write()
@@ -480,17 +480,17 @@ def main():
         options, args = getopt.getopt(sys.argv[1:], 'CMpw:l:h:',
             ['help', 'color', 'packed', 'mono', 'width', 'length', 'height', 'oldpack'])
     except getopt.error:
-        print 'Error: You tried to use an unknown option.\n\n'
-        print helptext
+        print('Error: You tried to use an unknown option.\n\n')
+        print(helptext)
         sys.exit(0)
         
     if len(sys.argv[1:]) == 0:
-        print helptext
+        print(helptext)
         sys.exit(0)
     
     for o, a in options:
         if o in ('--help'):
-            print helptext
+            print(helptext)
             sys.exit(0)
 
         elif o in ('-C', '--color'):
@@ -512,14 +512,14 @@ def main():
             width = int(a)
 
     if len(args) < 1:
-        print helptext
+        print(helptext)
         sys.exit(0)
 
     elif len(args) == 1:
         inputFilename = args[0]
         dirname = os.path.splitext(inputFilename)[0]
         basename = os.path.basename(inputFilename)
-        print basename
+        print(basename)
         outputFilenameFormat = dirname + '/frame_%06d.DNG'
     else:
         inputFilename = args[0]
