@@ -13,11 +13,9 @@ This will, however, automatically make a directory where it will put the output 
 Requirements
 ------------
 
-Python 2.7
+Python 3
 
-This might work in Python 3 as well, but it has not been tested.
-
-Windows users will need Python 2.7, available here: https://www.python.org/downloads/release/python-278/
+Windows users will need Python, [available here](https://www.python.org/downloads/windows/)
 
 Instructions
 ------------
@@ -26,21 +24,20 @@ Copy the script file, pyraw2dng.py and the raw 16 bit format video into the same
 
 Open a terminal in that directory and use a command similar to the following, but replacing (width) and (length) with the horizontal and vertical resolutions of the video, and (filename.raw) with the name of the raw video file.
 
-For Windows:
-python pyraw2dng.py -w (width) -l (length) (filename.raw)
-	Note: Under default install (without python in PATH), the first term "python" has to be replaced with "c:\Python27\python.exe"
+### For Windows
 
-For Linux:
-./pyraw2dng.py -w (width) -l (length) (filename.raw)
+    python pyraw2dng.py -w (width) -l (length) (filename.raw)
+  
+Under default install (without python in PATH), the first term "python" has to be replaced with "c:\Python37\python.exe"
+
+### For Linux:
+
+    ./pyraw2dng.py -w (width) -l (length) (filename.raw)
 
 Optional arguments to add to decode 12-bit videos:
-The --packed option will decode the raw file as a 12-bit packed format
-generated from cameras with a software version v0.3.1 and newer.
-The --oldpack option will attempt to decode the raw file as a 12-bit
-packed format generated from software versions v0.3.0 and older. However
-due bugs in this encoding format, there may be off-by-one pixel errors
-in the encoded files. This is most noticeable as colour corruption
-after demosiac.
+
+  * --packed option will decode the raw file as a 12-bit packed format generated from cameras with a software version v0.3.1 and newer.
+  * --oldpack option will attempt to decode the raw file as a 12-bit packed format generated from software versions v0.3.0 and older. However due bugs in this encoding format, there may be off-by-one pixel errors in the encoded files. This is most noticeable as colour corruption after demosiac.
 
 If the script runs successfully, there will be a folder with the same name as your file containing the .dng images and the text "(filename).raw" will appear in the terminal.
 
